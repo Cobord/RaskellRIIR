@@ -285,3 +285,32 @@ fn select_acausal(keys: &Keys, queries: &Queries, predicate: &Predicate) -> Sele
         })
         .collect()
 }
+
+mod tests {
+    use super::{Sequence,Selector};
+
+    #[allow(dead_code)]
+    fn random_sequence() -> Sequence {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    fn random_selector() -> Selector {
+        todo!()
+    }
+
+    #[test]
+    fn max_kqv_is_maximum() {
+        todo!()
+    }
+
+    #[test]
+    fn min_kqv_is_minimum() {
+        todo!()
+    }
+
+    #[test]
+    fn prop_sel_width_is_num_true() {
+        todo!()
+    }
+}

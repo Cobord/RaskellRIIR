@@ -1,4 +1,4 @@
-use crate::{core::{BoolSequence,Predicate,Sequence,Token,from_bool, indices_of, max_kqv}, utils::filled_with, convenience::{question_where, from_bool_seq}};
+use crate::{core::{BoolSequence,Predicate,Sequence,Token,from_bool, indices_of, max_kqv}, utils::filled_with, convenience::{question_where, from_bool_seq,sample}};
 
 const SOS : Token = Token(-1);
 const EOS : Token = Token(-2);
@@ -42,3 +42,16 @@ fn show_token(t : Token) -> String {
     }
 }
 
+#[allow(dead_code)]
+fn count(xs : &mut Sequence) -> Sequence {
+    let seq_length = 24;
+    xs.insert(0, SOS);
+    sample(EOS, rasp_count, xs.clone(), seq_length)
+}
+
+mod tests {
+    #[test]
+    fn example_count_test() {
+        todo!()
+    }
+}
