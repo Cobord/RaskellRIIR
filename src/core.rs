@@ -32,7 +32,7 @@ impl DivAssign<usize> for Token {
 
 pub type Sequence = Vec<Token>;
 type Keys = Sequence;
-type Queries = Sequence;
+pub type Queries = Sequence;
 type Values = Sequence;
 pub type Predicate = fn(Token, Token) -> bool;
 pub type BoolSequence = Vec<bool>;

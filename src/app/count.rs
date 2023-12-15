@@ -29,6 +29,7 @@ fn rasp_count(inputs : &Sequence) -> Sequence {
         .iter()
         .map(|z| *z>Token(0))
         .collect::<BoolSequence>();
+    #[allow(clippy::let_and_return)]
     let final_counts = question_where(&start_counting, (&count_froms,&from_bool_seq(&with_eos)));
     final_counts
 }
