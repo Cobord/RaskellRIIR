@@ -8,7 +8,7 @@
 
 use crate::core::{
     from_bool, indices, kqv, max_kqv, min_kqv, sel_width, select_causal, seq_map, AggregationType,
-    Predicate, Sequence, Token, Queries,
+    Predicate, Queries, Sequence, Token,
 };
 use crate::{core::indices_of, utils::filled_with};
 
@@ -255,75 +255,96 @@ where
 }
 
 #[allow(dead_code)]
-fn num_previous(xs : &Sequence, queries: &Queries) -> Sequence {
+fn num_previous(xs: &Sequence, queries: &Queries) -> Sequence {
     /*
     -- | Computes the number of previous tokens in a `Sequence` that are equal to each `Token` from `Queries`.
     numPrev :: Sequence -> Queries -> Sequence
     numPrev xs queries = selWidth (selectCausal xs queries (==))
     */
-    let equality : Predicate = |a,b| a==b;
+    let equality: Predicate = |a, b| a == b;
     sel_width(select_causal(xs, queries, &equality))
 }
 
 #[allow(dead_code)]
-fn has_seen(xs : &Sequence, queries: &Queries) -> Sequence {
+fn has_seen(xs: &Sequence, queries: &Queries) -> Sequence {
     /*
     -- | Returns 1s where the `Token` from the `Queries` has been seen before in the `Sequence`.
     hasSeen :: Sequence -> Queries -> Sequence
     hasSeen xs queries = kqv 0 Max xs queries (==) (queries `filledWith` 1)
     */
-    let equality : Predicate = |a,b| a==b;
+    let equality: Predicate = |a, b| a == b;
     let values = filled_with(queries, Token(1));
-    kqv(Token(0), AggregationType::Max, xs, queries, &equality, &values)
+    kqv(
+        Token(0),
+        AggregationType::Max,
+        xs,
+        queries,
+        &equality,
+        &values,
+    )
 }
 
 #[allow(dead_code)]
-fn firsts(filler : Token,xs : &Sequence, queries: &Queries) -> Sequence {
+fn firsts(filler: Token, xs: &Sequence, queries: &Queries) -> Sequence {
     /*
     -- | Finds the first occurrence of each query token in a `Sequence`.
     firsts :: Token -> Sequence -> Queries -> Sequence
     firsts filler xs queries = kqv filler Min xs queries (==) (indicesOf xs)
     */
-    let equality : Predicate = |a,b| a==b;
+    let equality: Predicate = |a, b| a == b;
     let values = indices_of(xs);
-    kqv(filler, AggregationType::Min, xs, queries, &equality, &values)
+    kqv(
+        filler,
+        AggregationType::Min,
+        xs,
+        queries,
+        &equality,
+        &values,
+    )
 }
 
 #[allow(dead_code)]
-fn lasts(filler : Token,xs : &Sequence, queries: &Queries) -> Sequence {
+fn lasts(filler: Token, xs: &Sequence, queries: &Queries) -> Sequence {
     /*
     -- | Finds the last occurrence of each query token in a `Sequence`.
     lasts :: Token -> Sequence -> Queries -> Sequence
     lasts filler xs queries = kqv filler Max xs queries (==) (indicesOf xs)
     */
-    let equality : Predicate = |a,b| a==b;
+    let equality: Predicate = |a, b| a == b;
     let values = indices_of(xs);
-    kqv(filler, AggregationType::Max, xs, queries, &equality, &values)
+    kqv(
+        filler,
+        AggregationType::Max,
+        xs,
+        queries,
+        &equality,
+        &values,
+    )
 }
 
 #[allow(dead_code)]
-fn index_select(filler: Token, xs : &Sequence, idxs: &Sequence) -> Sequence {
+fn index_select(filler: Token, xs: &Sequence, idxs: &Sequence) -> Sequence {
     /*
     -- | Selects the tokens from a `Sequence` at the indices provided by another sequence.
     indexSelect :: Token -> Sequence -> Sequence -> Sequence
     indexSelect filler xs idxs = kqv filler Max (indicesOf xs) idxs (==) xs
     */
-    let equality : Predicate = |a,b| a==b;
+    let equality: Predicate = |a, b| a == b;
     let keys = indices_of(xs);
     kqv(filler, AggregationType::Max, &keys, idxs, &equality, xs)
 }
 
 mod tests {
-    use super::{Token,Sequence};
+    use super::{Sequence, Token};
 
     struct EqualLengthSequences {
-        seq1 : Sequence,
-        seq2 : Sequence,
+        seq1: Sequence,
+        seq2: Sequence,
     }
 
     trait Arbitrary {
         fn arbitrary() -> Self;
-        fn shrink(&self) -> Box<dyn Iterator<Item=Self>>;
+        fn shrink(&self) -> Box<dyn Iterator<Item = Self>>;
     }
 
     impl Arbitrary for Token {
@@ -331,7 +352,7 @@ mod tests {
             todo!()
         }
 
-        fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
+        fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
             Box::new(std::iter::empty::<_>())
         }
     }
@@ -341,7 +362,7 @@ mod tests {
             todo!()
         }
 
-        fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
+        fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
             todo!()
         }
     }
@@ -359,29 +380,29 @@ mod tests {
             */
             use rand::{distributions::Uniform, prelude::Distribution};
             let n_max = 100;
-            let between = Uniform::<usize>::from(0..n_max+1);
+            let between = Uniform::<usize>::from(0..n_max + 1);
             let mut rng = rand::thread_rng();
             let len = between.sample(&mut rng);
             let seq1 = (0..len).map(|_| Token::arbitrary()).collect();
             let seq2 = (0..len).map(|_| Token::arbitrary()).collect();
-            Self {
-                seq1,
-                seq2,
-            }
-
+            Self { seq1, seq2 }
         }
 
-        fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
+        fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
             let shrinked1 = self.seq1.shrink();
-            let iter = shrinked1.into_iter().zip(self.seq2.shrink())
-                .map(|(l1_new,l2_new)| 
-                    EqualLengthSequences{seq1: l1_new, seq2: l2_new});
+            let iter = shrinked1
+                .into_iter()
+                .zip(self.seq2.shrink())
+                .map(|(l1_new, l2_new)| EqualLengthSequences {
+                    seq1: l1_new,
+                    seq2: l2_new,
+                });
             Box::new(iter)
         }
     }
 
     #[test]
-    fn prop_where_all_true_is_id_left(){
+    fn prop_where_all_true_is_id_left() {
         /*
         prop_where_allTrue_is_idLeft :: Sequence -> Property
         prop_where_allTrue_is_idLeft xs = xs === allTrue ? (xs, xs `filledWith` undefined)
@@ -392,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_where_all_false_is_id_right(){
+    fn prop_where_all_false_is_id_right() {
         /*
         prop_where_allFalse_is_idRight :: Sequence -> Property
         prop_where_allFalse_is_idRight xs = xs === allFalse ? (xs `filledWith` undefined, xs)
@@ -403,7 +424,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_where_alternating_alternates(){
+    fn prop_where_alternating_alternates() {
         /*
         prop_where_alternating_alternates :: Sequence -> Property
         prop_where_alternating_alternates xs = take l (cycle [1, -1]) === alternating ? (xs `filledWith` 1, xs `filledWith` (-1))
@@ -415,16 +436,16 @@ mod tests {
     }
 
     #[test]
-    fn prop_shift_right_zero_is_id(){
+    fn prop_shift_right_zero_is_id() {
         /*
         prop_shiftRight_zero_is_id :: Sequence -> Property
         prop_shiftRight_zero_is_id xs = xs === shiftRight 0 0 xs
         */
         todo!()
     }
-    
+
     #[test]
-    fn prop_shift_right_length_matches_replicate(){
+    fn prop_shift_right_length_matches_replicate() {
         /*
         prop_shiftRight_length_matches_replicate :: Sequence -> Property
         prop_shiftRight_length_matches_replicate xs = replicate (fromIntegral l) 1 === shiftRight 1 l xs
@@ -435,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_shift_right_matches_rotate_fill(){
+    fn prop_shift_right_matches_rotate_fill() {
         /*
         prop_shiftRight_matches_rotateFill :: Token -> Int8 -> Sequence -> Property
         prop_shiftRight_matches_rotateFill t n xs = n >= 0 && l > 0 ==> rotateFill xs === shiftRight t n xs
@@ -451,7 +472,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_cum_sum_matches_scanl(){
+    fn prop_cum_sum_matches_scanl() {
         /*
         prop_cumSum_matches_scanl :: [Bool] -> Property
         prop_cumSum_matches_scanl bs = scanl1 (+) (map fromBool bs) === cumSum bs
@@ -460,7 +481,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_mask_matches_zip_with(){
+    fn prop_mask_matches_zip_with() {
         /*
         prop_mask_matches_zipWith :: Token -> [Bool] -> Sequence -> Property
         prop_mask_matches_zipWith t bs xs = zipWith (\b x -> if b then x else t) bs xs === mask t bs xs
@@ -469,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_maximum_matches_scanl(){
+    fn prop_maximum_matches_scanl() {
         /*
         prop_maximum'_matches_scanl :: Sequence -> Property
         prop_maximum'_matches_scanl xs = scanl1 max xs === maximum' xs
@@ -478,7 +499,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_minimum_matches_scanl(){
+    fn prop_minimum_matches_scanl() {
         /*
         prop_minimum'_matches_scanl :: Sequence -> Property
         prop_minimum'_matches_scanl xs = scanl1 min xs === minimum' xs
@@ -487,7 +508,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_argmax_matches_scanl(){
+    fn prop_argmax_matches_scanl() {
         /*
         prop_argmax_matches_scanl :: Sequence -> Property
         prop_argmax_matches_scanl xs = map fst (scanl1 argmax' (enumerate xs)) === argmax xs
@@ -503,7 +524,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_argmin_matches_scanl(){
+    fn prop_argmin_matches_scanl() {
         /*
         prop_argmin_matches_scanl :: Sequence -> Property
         prop_argmin_matches_scanl xs = map fst (scanl1 argmin' (enumerate xs)) === argmin xs
@@ -519,7 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_num_prev_matches_zip_with(){
+    fn prop_num_prev_matches_zip_with() {
         /*
         prop_numPrev_matches_zipWith :: EqualLengthSequences -> Property
         prop_numPrev_matches_zipWith (EqualLengthSequences (xs, qs)) =
@@ -535,7 +556,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_has_seen_matches_zip_with(){
+    fn prop_has_seen_matches_zip_with() {
         /*
         prop_hasSeen_matches_zipWith :: EqualLengthSequences -> Property
         prop_hasSeen_matches_zipWith (EqualLengthSequences (xs, qs)) =
@@ -551,7 +572,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_firsts_matches_zip_with(){
+    fn prop_firsts_matches_zip_with() {
         /*
         prop_firsts_matches_zipWith :: Token -> EqualLengthSequences -> Property
         prop_firsts_matches_zipWith filler (EqualLengthSequences (xs, qs)) =
@@ -570,7 +591,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_lasts_matches_zip_with(){
+    fn prop_lasts_matches_zip_with() {
         /*
         prop_lasts_matches_zipWith :: Token -> EqualLengthSequences -> Property
         prop_lasts_matches_zipWith filler (EqualLengthSequences (xs, qs)) =
@@ -589,7 +610,7 @@ mod tests {
     }
 
     #[test]
-    fn prop_index_select_matches_zip_with(){
+    fn prop_index_select_matches_zip_with() {
         /*
         prop_indexSelect_matches_zipWith :: Token -> EqualLengthSequences -> Property
         prop_indexSelect_matches_zipWith filler (EqualLengthSequences (xs, idxs)) =
@@ -605,5 +626,4 @@ mod tests {
         */
         todo!()
     }
-
 }

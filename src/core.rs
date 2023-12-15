@@ -287,7 +287,7 @@ fn select_acausal(keys: &Keys, queries: &Queries, predicate: &Predicate) -> Sele
 }
 
 mod tests {
-    use super::{Sequence,Selector};
+    use super::{Selector, Sequence};
 
     #[allow(dead_code)]
     fn random_sequence() -> Sequence {

@@ -1,7 +1,7 @@
 use crate::core::Sequence;
 
 #[allow(dead_code)]
-fn sort(_xs : &mut Sequence) {
+fn sort(_xs: &mut Sequence) {
     todo!()
 }
 
