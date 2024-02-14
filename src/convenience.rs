@@ -44,7 +44,7 @@ pub fn question_where(bs: &[bool], xys: (&Sequence, &Sequence)) -> Sequence {
     );
     let yms = seq_map(
         |bt, y| {
-            if bt == Token(1) {
+            if bt == Token(0) {
                 y
             } else {
                 Token(0)
@@ -335,6 +335,7 @@ fn index_select(filler: Token, xs: &Sequence, idxs: &Sequence) -> Sequence {
 }
 
 mod tests {
+
     use super::{Sequence, Token};
 
     struct EqualLengthSequences {
@@ -349,7 +350,17 @@ mod tests {
 
     impl Arbitrary for Token {
         fn arbitrary() -> Self {
-            todo!()
+            use rand::{distributions::Uniform, prelude::Distribution};
+            let do_low = rand::distributions::Bernoulli::new(0.2).unwrap();
+            let mut rng = rand::thread_rng();
+            let should_do_low = do_low.sample(&mut rng);
+            if should_do_low {
+                let between = Uniform::<i8>::from(0..3);
+                Self(between.sample(&mut rng))
+            } else {
+                let between = Uniform::<i8>::from(0..i8::MAX);
+                Self(between.sample(&mut rng))
+            }
         }
 
         fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
@@ -359,7 +370,12 @@ mod tests {
 
     impl Arbitrary for Sequence {
         fn arbitrary() -> Self {
-            todo!()
+            use rand::{distributions::Uniform, prelude::Distribution};
+            let n_max = 100;
+            let between = Uniform::<usize>::from(0..n_max + 1);
+            let mut rng = rand::thread_rng();
+            let len = between.sample(&mut rng);
+            (0..len).map(|_| Token::arbitrary()).collect()
         }
 
         fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
@@ -409,7 +425,23 @@ mod tests {
         where
             allTrue = replicate (length xs) True
         */
-        todo!()
+        use super::question_where;
+        use crate::core::BoolSequence;
+        let num_trials = 10;
+        for _ in 0..num_trials {
+            let zs = EqualLengthSequences::arbitrary();
+            let xs = zs.seq1;
+            /*
+            unlike above where could use undefined and rely on Haskell laziness
+            instead we create a junk ys of the same length
+            */
+            let ys = zs.seq2;
+            let all_true = (0..xs.len()).map(|_| true).collect::<BoolSequence>();
+            let observed = question_where(&all_true, (&xs, &ys));
+            for (a,b) in observed.iter().zip(xs) {
+                assert_eq!((*a).0,b.0);
+            }
+        }
     }
 
     #[test]
@@ -420,7 +452,23 @@ mod tests {
         where
             allFalse = replicate (length xs) False
         */
-        todo!()
+        use super::question_where;
+        use crate::core::BoolSequence;
+        let num_trials = 10;
+        for _ in 0..num_trials {
+            let zs = EqualLengthSequences::arbitrary();
+            let xs = zs.seq1;
+            /*
+            unlike above where could use undefined and rely on Haskell laziness
+            instead we create a junk ys of the same length
+            */
+            let ys = zs.seq2;
+            let all_false = (0..xs.len()).map(|_| false).collect::<BoolSequence>();
+            let observed = question_where(&all_false, (&ys, &xs));
+            for (a,b) in observed.iter().zip(xs) {
+                assert_eq!((*a).0,b.0);
+            }
+        }
     }
 
     #[test]
@@ -432,7 +480,20 @@ mod tests {
             alternating = cycle [True, False]
             l = length xs
         */
-        todo!()
+        use super::question_where;
+        use crate::{core::BoolSequence,utils::filled_with};
+        let num_trials = 10;
+        for _ in 0..num_trials {
+            let xs = Sequence::arbitrary();
+            let ones = filled_with(&xs, Token(1));
+            let neg_ones = filled_with(&xs, Token(-1));
+            let alternating = (0..xs.len()).map(|idx| idx % 2 == 0).collect::<BoolSequence>();
+            let observed = question_where(&alternating, (&ones,&neg_ones));
+            let expected = alternating.iter().map(|z| if *z {Token(1)} else {Token(-1)}).collect::<Sequence>();
+            for (a,b) in observed.iter().zip(expected) {
+                assert_eq!((*a).0,b.0);
+            }
+        }
     }
 
     #[test]
